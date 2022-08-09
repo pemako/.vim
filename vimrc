@@ -1,9 +1,4 @@
-"""""""""""""""""""""""""""""""""""""""""""""""""""
-" 
-" pemakoa@gmail.com
-"
-"
-""""""""""""""""""""""""""""""""""""""""""""""""" 
+"""" pemakoa@gmail.com
 
 """ General
 syntax on         " 开启语法高亮
@@ -14,7 +9,6 @@ filetype indent on
 "" Set to auto read when a file is changed from the outside
 set autoread
 au FocusGained,BufEnter * checktime
-
 "" With a map leader it's possible to do extra key combinations
 "" like <leader>w saves the current file
 let mapleader = ";"

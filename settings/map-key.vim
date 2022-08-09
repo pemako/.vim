@@ -29,3 +29,15 @@ endfunction
 command! ZoomToggle call s:ZoomToggle()
 nnoremap <silent> <Leader>z :ZoomToggle<CR>
 
+
+""" vim-go 插件
+au FileType go nmap <leader>g <Plug>(go-run)
+au FileType go nmap <leader>gd <Plug>(go-def-split)
+au FileType go nmap <leader>gi <Plug>(go-iferr)
+au FileType go nmap <leader>gf :GoFillStruct<cr>
+au FileType go nmap <leader>gdd :GoDebugStart .<cr>
+
+
+"" preservim/nerdcommenter 插件默认添加注释和取消注释快捷键
+"<leader>cc   加注释
+"<leader>cu   解开注释
