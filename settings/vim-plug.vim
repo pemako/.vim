@@ -14,7 +14,6 @@ let g:plug_pwindow  = 'vertical rightbelow new'         " 打开 PlugDiff 预览
 
 call plug#begin(s:bundle_dir)
 
-
 Plug 'mhinz/vim-startify'                               " vim 开始界面
 Plug 'preservim/tagbar'                                 " 查看当前代码文件中的变量和函数列表的插件
 Plug 'vim-airline/vim-airline'                          " Vim状态栏插件
@@ -30,7 +29,6 @@ Plug 'preservim/nerdcommenter'                          " 快速添加注释
 "" Git 相关
 Plug 'tpope/vim-fugitive'
 Plug 'rhysd/committia.vim'
-"Plug 'sheerun/vim-polyglot'                             " 语法高亮包
 
 "" 搜索
 Plug 'junegunn/fzf', {'do': { -> fzf#install() }}
@@ -45,10 +43,12 @@ Plug 'iamcco/markdown-preview.nvim', { 'do': { -> mkdp#util#install() }, 'for': 
 
 Plug 'fatih/vim-go', {'tag': '*'}
 Plug 'dense-analysis/ale'
+
 Plug 'prabirshrestha/vim-lsp'                           " async language server protocol plugin
+Plug 'mattn/vim-lsp-settings'
 Plug 'prabirshrestha/async.vim'
 Plug 'prabirshrestha/asyncomplete.vim'
 Plug 'prabirshrestha/asyncomplete-lsp.vim'
-Plug 'prabirshrestha/asyncomplete-file.vim'
+"Plug 'prabirshrestha/asyncomplete-file.vim'
 
 call plug#end()

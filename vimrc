@@ -1,6 +1,6 @@
 """" pemakoa@gmail.com
 
-""" General
+" General
 syntax on         " 开启语法高亮
 filetype on       " Enable filetype plugins
 filetype plugin on
@@ -90,4 +90,7 @@ set ffs=unix,dos,mac            " Use Unix as the standard file type
 set completeopt=longest,menu
 
 "" 加载插件
-source ~/.vim/settings/manager.vim
+let setting_dir = '~/.vim/settings'
+for fpath in split(globpath(setting_dir, '*.vim'), '\n')
+  exec 'source' fpath
+endfor
