@@ -4,7 +4,7 @@ nmap <leader>w :w!<cr>  " 保存当前文件
 nmap <leader>x :x<cr>	  " 关闭当前文件
 nmap <leader>q :q<cr>	  " 退出当前文件
 
-nnoremap <C-d> :shell<CR>             " Cttl-d 在 vim 和 shell 来回切换
+nnoremap <C-s> :shell<CR>             " Cttl-d 在 vim 和 shell 来回切换
 noremap <silent><leader>/ :nohls<CR>  " 关闭掉上次搜索的高亮
 
 " Smart way to move between windows

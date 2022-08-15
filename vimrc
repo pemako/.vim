@@ -8,10 +8,12 @@ filetype indent on
 
 "" Set to auto read when a file is changed from the outside
 set autoread
+"set autowrite
 au FocusGained,BufEnter * checktime
 "" With a map leader it's possible to do extra key combinations
 "" like <leader>w saves the current file
-let mapleader = ";"
+"leader 键的默认值为 /
+"let mapleader = "\"
 
 
 """ VIM user interface
@@ -37,7 +39,7 @@ set cursorline                  " 高亮光标所在列
 set showcmd                     " 显示等待输入命令
 set scroll=1                    " 光标移动的距离
 set scrolloff=3                 " 光标移动到buffer的顶部和底部时保持3行距离
-set cmdheight=1                 " 设置命令行的高度
+set cmdheight=2                 " 设置显示消息的空间
 set confirm                     " 在处理未保存或只读文件的时候，弹出确认
 set report=0                    " 调用:commands 命令模式时总是报告修改的行数
 
