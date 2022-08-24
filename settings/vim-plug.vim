@@ -22,6 +22,7 @@ Plug 'Xuyuanp/nerdtree-git-plugin'                      " 可以在导航目录�
 Plug 'preservim/nerdtree', {'on': 'NERDTreeToggle'}     " 提供一个导航目录的侧边栏
 Plug 'jiangmiao/auto-pairs'                             " 自动补全括号的插件，包括小括号，中括号，以及花括号
 Plug 'tpope/vim-surround'
+Plug 'tpope/vim-repeat'
 Plug 'voldikss/vim-translator'													" 翻译插件
 Plug 'yianwillis/vimcdoc'                               " vim 中文版文档
 Plug 'preservim/nerdcommenter'                          " 快速添加注释

@@ -31,6 +31,7 @@ set noundofile                  " 禁止生成临时文件
 set nobackup                    " 禁止备份
 set noswapfile                  " 禁止swap文件
 set ignorecase                  " 搜索忽略大小写
+set smartcase                   " 该选项被启用后，只要我们在查找模式中输入了大 写字母，‘ignorecase’设置就不再生效了
 
 set number                      " 显示行号
 "set cursorcolumn               " 高亮光标所在行
@@ -56,9 +57,8 @@ set wrap                        " wrap lines
 set softtabstop=2               " 每次删除的空格数
 set backspace=indent,eol,start  " 使用回车键正常处理空格缩进，行结束符 段首
 set whichwrap+=<,>,h,l          " Configure backspace so it acts as it should act
-set smartcase                   " When searching try to be smart about cases
-set hlsearch                    " Highlight search results
-set incsearch                   " Makes search act like search in modern browsers
+set hlsearch                    " 高亮搜索结果
+set incsearch                   " 增量查找功能
 set lazyredraw                  " 在执行宏时不要重绘(良好的性能配置)
 set magic                       " For regular expressions turn magic on
 set showmatch                   " 高亮显示匹配的括号
