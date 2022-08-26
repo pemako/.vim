@@ -26,6 +26,8 @@ Plug 'tpope/vim-repeat'
 Plug 'voldikss/vim-translator'													" 翻译插件
 Plug 'yianwillis/vimcdoc'                               " vim 中文版文档
 Plug 'preservim/nerdcommenter'                          " 快速添加注释
+Plug 'ryanoasis/vim-devicons'
+Plug 'tiagofumo/vim-nerdtree-syntax-highlight'
 
 "" Git 相关
 Plug 'tpope/vim-fugitive'
