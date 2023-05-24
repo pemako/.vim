@@ -13,7 +13,7 @@ set autoread
 "" With a map leader it's possible to do extra key combinations
 "" like <leader>w saves the current file
 "leader 键的默认值为 /
-"let mapleader = "\"
+"let mapleader = ";"
 
 
 """ VIM user interface
@@ -89,6 +89,7 @@ set ffs=unix,dos,mac            " Use Unix as the standard file type
 
 " 让Vim的补全菜单行为与一般IDE一致(参考VimTip1228)
 set completeopt=longest,menu
+set rtp+=/usr/local/opt/fzf
 
 "" 加载插件
 let setting_dir = '~/.vim/settings'

@@ -16,15 +16,15 @@ let g:ale_fixers = {
 nmap <Leader>; :ALEFix<CR>
 
 
-
 "" fzf 插件相关配置
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'relative': v:true, 'yoffset': 1.0  }  }
-
 
 
 "" nerdtree 插件相关配置
 let NERDTreeIgnore = ['\.pyc$', '__pycache__']
 let NERDTreeShowHidden=1
+" https://github.com/preservim/nerdtree/issues/1321
+" let g:NERDTreeMinimalMenu=1
 " nerdtree-git-plugin 插件配置
 let g:NERDTreeGitStatusIndicatorMapCustom = {
     \ "Modified"  : "✹",
@@ -42,7 +42,6 @@ let g:NERDTreeGitStatusIndicatorMapCustom = {
 nnoremap <leader>n :NERDTree<CR>
 
 
-
 "" translator 插件设置
 let g:translator_window_type        = 'popup' " popup & preview
 let g:translator_window_max_width   = 0.6
@@ -57,7 +56,6 @@ vmap <silent> <Leader>t <Plug>TranslateWV
 "nmap <silent> <Leader>r <Plug>TranslateR
 "vmap <silent> <Leader>r <Plug>TranslateRV
 "nmap <silent> <Leader>x <Plug>TranslateX
-
 
 
 "" vim-go 插件设置
