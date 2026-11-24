@@ -1,0 +1,3 @@
+*.bak.*
+bundle
+plug.vim.old

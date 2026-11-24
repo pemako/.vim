@@ -1,0 +1,12 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhistcnt =5
+let g:netrw_dirhist_5='/Users/mako/Work/rust-lang/guessing_game/target'
+let g:netrw_dirhist_4='/Users/mako/Work/git.mako.local/pemako/formatter/docker'
+let g:netrw_dirhist_3='/Users/mako/.config/gosh'
+let g:netrw_dirhist_2='/Users/mako/Work/git.domob-inc.cn/bluefocus/atlantis-ai-agent/bin'
+let g:netrw_dirhist_1='/Users/mako/Work/github.com/pemako/forge'
+let g:netrw_dirhist_0='/private/etc/racoon'
+let g:netrw_dirhist_9='/Users/mako/Tianshu/tianshu-labs/agent'
+let g:netrw_dirhist_8='/Users/mako/Work/github.com/pemako/gosh/internal/database/redis'
+let g:netrw_dirhist_7='/opt/homebrew/share/vim/vimfiles/indent'
+let g:netrw_dirhist_6='/Users/mako/Work/study/atls'
