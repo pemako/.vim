@@ -170,6 +170,8 @@ nnoremap <C-l> <C-W>l
 
 " 剪贴板（不占用 <C-v> 可视块 / <C-c> 可视模式取消）
 vnoremap <leader>y "+y
+" Normal 下 ;y 是等待动作的操作符（;yw 等），整行复制用 ;Y
+nnoremap <leader>Y "+yy
 nnoremap <leader>p "+p
 nnoremap <leader>P "+P
 
