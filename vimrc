@@ -351,9 +351,19 @@ function! s:ShowResult(run) abort
   endif
   " 打开窗口但把焦点还回来：留在源码里，才能接着按 ;b / ;r
   " （否则焦点在 quickfix 窗口上时，:w 会作用在那个缓冲区，报 E32）
-  let l:win = win_getid()
-  cwindow
-  call win_gotoid(l:win)
+  " 用 copen 而不是 cwindow：程序输出行没有文件/行号，cwindow 会认为"没有错误"而不开窗。
+  " 窗口已存在时不再 copen，避免每次抢一下焦点（视觉上闪一下）。
+  let l:has_qf = 0
+  for l:w in range(1, winnr('$'))
+    if getwinvar(l:w, '&buftype') ==# 'quickfix'
+      let l:has_qf = 1
+    endif
+  endfor
+  if !l:has_qf
+    let l:win = win_getid()
+    copen
+    call win_gotoid(l:win)
+  endif
   if a:run
     " 运行输出在末尾：把 quickfix 的"当前项"设到最后一条，窗口会跟着滚过去
     call setqflist([], 'a', {'idx': len(getqflist())})
