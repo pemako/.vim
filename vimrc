@@ -42,7 +42,8 @@ set foldcolumn=1
 set signcolumn=number           " 诊断符号画在行号列，coc 报错时正文不横向抖动
 set foldmethod=indent
 set foldlevel=99                " 默认展开所有折叠，需要时再 zc/za
-set lazyredraw                  " 宏/批量操作时减少重绘
+" 不开 lazyredraw：官方文档说它只适合临时打开（may cause display errors），
+" 常开会让 quickfix / coc 弹窗"闪一下再定住"
 set shortmess+=c                " 补全不弹 "match n of m" 提示（coc 用）
 set updatetime=300              " coc 诊断/符号刷新更快（默认 4000 太慢）
 set timeoutlen=800              " 映射序列的按键间隔上限（超时会当普通命令执行）
@@ -79,6 +80,10 @@ set nowritebackup               " 写文件时也不生成临时 文件~（打�
 set noswapfile
 set undofile                    " 持久撤销：崩溃/误操作后重新打开仍可 undo
 set undodir=~/.vim/undo
+" 目录不存在时 undofile 会静默失效（连 undofile() 都返回空），换机器必踩
+if !isdirectory(expand('~/.vim/undo'))
+  call mkdir(expand('~/.vim/undo'), 'p', 0700)
+endif
 set wildignore=*.o,*~,*.pyc,*.gem
 set wildignore+=*/.git/*,*/.hg/*,*/.svn/*,*/.DS_Store
 set wildignore+=*/node_modules/*,*/target/*,*/.venv/*,*/__pycache__/*
@@ -457,8 +462,15 @@ function! s:LangWorkflow(action) abort
 endfunction
 
 " 需要 stdin 的程序：在终端里跑
+" 和 s:LangWorkflow 一样要先切到项目根：cargo / go 都要从含 Cargo.toml / go.mod
+" 的目录启动，否则报 "go.mod file not found"
 function! s:LangTerm() abort
   let l:ft = &filetype
+  if l:ft ==# 'rust'
+    execute 'lcd ' . fnameescape(s:FindUp('Cargo.toml'))
+  elseif l:ft ==# 'go'
+    execute 'lcd ' . fnameescape(s:FindUp('go.mod'))
+  endif
   if l:ft ==# 'rust'
     term cargo run
   elseif l:ft ==# 'go'
@@ -484,13 +496,21 @@ function! s:PyAutoImport() abort
     return
   endif
   silent! write
+  " autoimport 在文件头插入 import，行号会整体下移；只存行号的 winrestview 会
+  " 让光标停在原行号上（指向的已经是别的代码），所以按插入行数补偿
+  let l:before = line('$')
+  let l:view   = winsaveview()
   let l:out = system(shellescape(l:bin) . ' ' . shellescape(expand('%:p')) . ' 2>&1')
   if v:shell_error != 0
     echo 'autoimport 失败：' . substitute(l:out, "\n", ' ', 'g')
     return
   endif
   silent! edit!
-  echo '已补齐缺失的 import'
+  let l:added = line('$') - l:before
+  let l:view.lnum    += l:added
+  let l:view.topline += l:added
+  call winrestview(l:view)
+  echo l:added > 0 ? printf('已补齐 %d 行 import', l:added) : '没有缺失的 import'
 endfunction
 command! -nargs=0 Import :call <SID>PyAutoImport()
 

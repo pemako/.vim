@@ -103,7 +103,7 @@ Python 专用：
 
 | 键 | 作用 |
 |---|---|
-| `;F` / `:Import` | 用 `autoimport` 扫描当前文件，补齐缺失的 import（`import os`、`from pathlib import Path` 这类），补完自动重载缓冲区。用大写 `F` 是为了误触时安全（`F` 只会等下一个字符，不会进模式） |
+| `;F` / `:Import` | 用 `autoimport` 扫描当前文件，补齐缺失的 import（`import os`、`from pathlib import Path` 这类），补完自动重载缓冲区并按插入行数修正光标（停在原来那行代码上，而不是原来那个行号）。用大写 `F` 是为了误触时安全（`F` 只会等下一个字符，不会进模式） |
 | 补全时选 "Auto-import" 条目 | 单个符号自动带 import（pyright `autoImportCompletions`，coc-pyright 默认开） |
 | `:CocCommand pyright.organizeimports` | 反方向：排序并删除未使用的 import |
 
@@ -111,7 +111,7 @@ Python 专用：
 
 说明：
 
-- 所有 `;b/;r/;T/;g` 都会先 `:silent write` 再执行（用 `silent` 是为了不触发 hit-enter 提示），并把 cwd 切到**项目根**（向上找 `Cargo.toml` / `go.mod`；找不到才用文件目录），所以相对路径（cargo/go 的报错路径）能正确解析。
+- 所有 `;b/;r/;T` 都会先 `:silent write` 再执行（用 `silent` 是为了不触发 hit-enter 提示）；`;b/;r/;T/;g` 都会把 cwd 切到**项目根**（向上找 `Cargo.toml` / `go.mod`；找不到才用文件目录），所以相对路径（cargo/go 的报错路径）能正确解析。
 - 执行完会自动打开 quickfix 窗口把结果停住（**焦点留在源码窗口**，所以可以接着按 `;b`/`;r`）；`;r` 的列表会滚到最后一条，程序输出在末尾。
 - 列表显示：有位置的条目是 `文件|行 col 列| 文本`，纯输出行只显示文本，不会出现 `||`。
 - 看完用 `;e` 关掉（开/关切换）或 `:q` 关窗口；没有错误/输出时会提示一行，不弹窗口。
@@ -292,3 +292,5 @@ done
 | `smartindent` | 关 | `filetype indent` 已接管；它会把没有 `indentexpr` 的文件里 `#` 开头的行顶到第 0 列 |
 | `signcolumn` | `number` | 诊断符号画在行号列上，coc 报错时正文不横向抖动，也不额外占宽度 |
 | `scroll` | 不设 | 它是窗口局部选项，改窗口大小就被重置成半屏；滚动 1 行改用 `<C-d>` / `<C-u>` 映射 |
+| `lazyredraw` | 关 | 官方文档说它只适合临时打开（`may cause display errors`），常开会让 quickfix / coc 弹窗「闪一下再定住」 |
+| `undodir` | `~/.vim/undo`，启动时自动创建 | 目录不存在时 `undofile` 会**静默失效**（连 `undofile()` 都返回空），换机器/新克隆必踩 |
