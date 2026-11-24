@@ -4,6 +4,13 @@
   "rust-analyzer.procMacro.enable": true,
   "rust-analyzer.inlayHints.enable": true,
   "rust-analyzer.inlayHints.typeHints.enable": true,
-  "rust-analyzer.inlayHints.parameterHints.enable": true,
-  "rust-analyzer.inlayHints.chainingHints.enable": true
+  "rust-analyzer.inlayHints.parameterHints.enable": false,
+  "rust-analyzer.inlayHints.chainingHints.enable": true,
+  "go.checkForUpdates": false,
+  "bashIde.shellcheckPath": "/opt/homebrew/bin/shellcheck",
+  "bashIde.shfmt.path": "/opt/homebrew/bin/shfmt",
+  "go.goplsUseDaemon": false,
+  "pyright.inlayHints.parameterTypes": false,
+  "pyright.inlayHints.variableTypes": true,
+  "pyright.inlayHints.functionReturnTypes": true
 }
