@@ -29,7 +29,9 @@
 | 文件搜索 | fzf + ripgrep | `<C-p>` |
 | 文件浏览 | nnn | `;n` |
 
-ALE 已移除；`g:go_gopls_enabled = 0`，Go 的 gopls 只由 coc-go 启动一个实例。
+ALE 已移除。vim-go 的 LSP 功能全部关掉（`go_gopls_enabled` / `go_def_mapping_enabled` /
+`go_doc_keywordprg_enabled` / `go_code_completion_enabled` 均为 0），Go 的 gopls 只由 coc-go 起一个实例；
+vim-go 只保留命令集和保存时格式化。
 
 ---
 
@@ -42,10 +44,16 @@ ALE 已移除；`g:go_gopls_enabled = 0`，Go 的 gopls 只由 coc-go 启动一�
 | `;w` | 保存（强制 `:w!`） |
 | `;x` | 保存并关闭 |
 | `;q` | 关闭 |
-| `;cd` | 切到上级目录（并打印 pwd） |
+| `;cd` | 切到当前文件所在目录（并打印 pwd） |
 | `<C-h>` `<C-j>` `<C-k>` `<C-l>` | 在窗口间移动 |
+| `<C-d>` / `<C-u>` | 下 / 上滚动一行 |
 | `<C-p>` | fzf 找文件（rg 驱动） |
 | `;n` | 打开 nnn 文件浏览器 |
+| `;y` | 复制到系统剪贴板（Visual 模式） |
+| `;p` / `;P` | 从系统剪贴板粘贴到光标后 / 前 |
+| `;;` | 重复上一次 `f` / `t` 查找（leader 占用了原生 `;`） |
+
+`<C-v>`（可视块）和 `<C-c>`（取消）保持 Vim 原义，没有被剪贴板映射占用。
 
 ### 3.2 LSP（coc.nvim，四门语言通用）
 
@@ -88,7 +96,7 @@ ALE 已移除；`g:go_gopls_enabled = 0`，Go 的 gopls 只由 coc-go 启动一�
 | `;r` | 运行 | `cargo run` | `go run .` | `python3 文件` | `bash 文件` |
 | `;T` | 测试 | `cargo test` | `go test ./...` | `pytest`（无则 `unittest`） | 无（提示用 `;b`） |
 | `;e` | 错误/输出列表（开/关切换） | 同 | 同 | 同 | 同 |
-| `;f` | 格式化 | `rustfmt` | `gofmt` | `ruff format` | `shfmt -i 2 -ci` |
+| `;f` | 格式化 | `rustfmt` | `goimports` | `ruff format` | `shfmt -i 2 -ci` |
 | `;g` | 终端里跑（要 stdin 时） | `cargo run` | `go run .` | `python3` | `bash` |
 
 Python 专用：
@@ -103,12 +111,11 @@ Python 专用：
 
 说明：
 
-- 所有 `;b/;r/;T/;g` 都会先 `:w` 再执行，并把 cwd 切到**项目根**（向上找 `Cargo.toml` / `go.mod`；找不到才用文件目录），所以相对路径（cargo/go 的报错路径）能正确解析。
+- 所有 `;b/;r/;T/;g` 都会先 `:silent write` 再执行（用 `silent` 是为了不触发 hit-enter 提示），并把 cwd 切到**项目根**（向上找 `Cargo.toml` / `go.mod`；找不到才用文件目录），所以相对路径（cargo/go 的报错路径）能正确解析。
 - 执行完会自动打开 quickfix 窗口把结果停住（**焦点留在源码窗口**，所以可以接着按 `;b`/`;r`）；`;r` 的列表会滚到最后一条，程序输出在末尾。
 - 列表显示：有位置的条目是 `文件|行 col 列| 文本`，纯输出行只显示文本，不会出现 `||`。
 - 看完用 `;e` 关掉（开/关切换）或 `:q` 关窗口；没有错误/输出时会提示一行，不弹窗口。
 - 输出统一进 quickfix：`;e` 打开列表，回车跳到出错行，`:cn` / `:cp` 上下条。
-- `;;` 也是格式化（等价 `;f`）。
 - 格式化失败不会破坏缓冲区内容，只报一行提示；光标位置会保留。
 
 ### 3.4 格式化细节
@@ -116,8 +123,8 @@ Python 专用：
 | filetype | 命令 | 备注 |
 |---|---|---|
 | rust | `rustfmt --edition 2021` | 若项目用 2024 edition，改 `s:FormatBuffer()` 里这一行 |
-| go | `gofmt` | import 增删由 vim-go 保存时处理（`go_imports_autosave`） |
-| python | `ruff format -` | 只格式化，不跑 lint 修复 |
+| go | `goimports` | 在 `gofmt` 基础上顺手增删 import；保存时 vim-go 也会再做一次（`go_fmt_autosave` / `go_imports_autosave`） |
+| python | `ruff format --stdin-filename <当前文件> -` | 只格式化，不跑 lint 修复；带文件名才能读到项目 `pyproject.toml` 的配置 |
 | sh / bash / zsh | `shfmt -i 2 -ci` | 2 空格缩进，`case` 分支也缩进 |
 | json | `jq .` | 2 空格 |
 | yaml | `prettier --stdin-filepath …` | 保留原缩进 |
@@ -261,9 +268,13 @@ done
 ## 8. 已知取舍与默认值
 
 - vim-go 只留 `:GoBuild` / `:GoTest` / `:GoFmt` 这类命令，LSP 全部交给 coc-go；`:GoDef` 会退化成 godef（未安装），请用 `gd`。
+  vim-go 的 ftplugin 默认用 buffer-local 映射抢 `gd` / `K` / `<C-]>`（会压过 coc 的全局映射），已用
+  `go_def_mapping_enabled = 0` 和 `go_doc_keywordprg_enabled = 0` 关掉。
 - Python 的 quickfix 由 `s:PythonQuickfix()` 重建（Vim 的 `errorformat` 对 `File "...", line N` 匹配不稳定）。
 - `:Format` 命令与 `;f` 等价，都走原生 formatter。
 - 工作流用两键小写（`;b ;r ;T ;e ;f ;g`），重命名在 `;m`。早期用 `;R*` 三键方案，因为超时后 `R` 会触发替换模式，已废弃。
+- 映射后面**不能写行尾注释**（`:help map-comments`）：`"` 之后的内容会被算进 `{rhs}` 当按键执行。
+  本配置所有说明都写在映射的上一行。
 - Markdown 预览插件（依赖 `yarn`）已移除；需要时再加，并先 `brew install yarn`。
 
 与常见默认不同的几处（都是有意为之）：
@@ -277,4 +288,7 @@ done
 | `iskeyword` | 默认 | 不再把 `-` `#` `@` `%` `$` 并入单词，避免影响 `w` / `*` / `iw` / `gd` |
 | `timeoutlen` / `ttimeoutlen` | 800 / 50 | 映射序列的按键间隔上限 0.8s；终端按键序列 50ms 内判定 |
 | `updatetime` | 300 | coc 诊断与符号刷新跟着变快（默认 4000） |
-| `autochdir` | 开 | `:!`、fzf、`:cd` 的基准目录跟随当前文件 |
+| `autochdir` | **关** | 开着会冲掉工作流切到项目根的 `:lcd`，并把 fzf / `:make` 的基准缩到当前子目录 |
+| `smartindent` | 关 | `filetype indent` 已接管；它会把没有 `indentexpr` 的文件里 `#` 开头的行顶到第 0 列 |
+| `signcolumn` | `number` | 诊断符号画在行号列上，coc 报错时正文不横向抖动，也不额外占宽度 |
+| `scroll` | 不设 | 它是窗口局部选项，改窗口大小就被重置成半屏；滚动 1 行改用 `<C-d>` / `<C-u>` 映射 |

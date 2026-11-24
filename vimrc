@@ -15,7 +15,7 @@ set encoding=utf-8
 set fileformats=unix,dos,mac
 set history=500
 set autoread                    " 外部改动的文件自动重读
-set autochdir                   " 自动切到当前文件所在目录（:! / fzf / grep 的基准目录）
+set noautochdir                 " 不自动切目录：会冲掉 :lcd，并把 fzf/:make 的基准缩到子目录
 set hidden                      " 切走的 buffer 保留（LSP/终端需要）
 set confirm                     " 有未保存修改时先确认
 set report=0                    " 报告每一次改动行数
@@ -33,13 +33,13 @@ set ruler
 set showcmd
 set cursorline
 set scrolloff=3
-set scroll=1                    " CTRL-D/CTRL-U 每次滚动 1 行（个人习惯）
 set laststatus=2
 set cmdheight=1
 set showmatch
 set matchtime=2
 set wildmenu
 set foldcolumn=1
+set signcolumn=number           " 诊断符号画在行号列，coc 报错时正文不横向抖动
 set foldmethod=indent
 set foldlevel=99                " 默认展开所有折叠，需要时再 zc/za
 set lazyredraw                  " 宏/批量操作时减少重绘
@@ -61,7 +61,7 @@ set tabstop=2
 set shiftwidth=2
 set softtabstop=2
 set autoindent
-set smartindent
+" 不用 smartindent：filetype indent 已接管；它会把无 indentexpr 文件的 # 顶到第 0 列
 set wrap
 set linebreak                   " 折行时不在单词中间断开
 set iskeyword&                  " 用默认字符集：$@%#- 并入单词会破坏 w / * / iw / gd
@@ -89,13 +89,13 @@ set completeopt=menuone,noinsert,noselect
 
 " ============================== 5. 插件管理 ==============================
 " vim-plug 不存在时自动下载
-def! s:mkCheckPlug()
+function! s:CheckPlug() abort
   if empty(glob('~/.vim/autoload/plug.vim'))
     silent! execute '!curl -fLo ~/.vim/autoload/plug.vim --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
     autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
   endif
-enddef
-call s:mkCheckPlug()
+endfunction
+call s:CheckPlug()
 
 let s:bundle_dir    = $HOME.'/.vim/bundle'
 let g:plug_shallow  = 0
@@ -125,7 +125,14 @@ Plug 'dhruvasagar/vim-table-mode'                " 表格（;tm / ;tt）
 Plug 'yianwillis/vimcdoc'                        " Vim 中文帮助
 
 " 语言
-Plug 'fatih/vim-go', {'tag': '*'}                " Go 命令集（LSP 归 coc）
+" vim-go 的 ftplugin 会用 buffer-local 映射抢走 gd/K/<C-]>，压过 coc 的全局映射，
+" 必须在加载前关掉，否则 Go 文件里跳转/悬停走的是 :GoDef 而不是 coc
+let g:go_def_mapping_enabled     = 0
+let g:go_doc_keywordprg_enabled  = 0
+let g:go_code_completion_enabled = 0
+" vim-go 默认会自己起一套 gopls（含 daemon），和 coc-go 的那个重复
+let g:go_gopls_enabled           = 0
+Plug 'fatih/vim-go', {'tag': '*', 'for': 'go'}   " Go 命令集（LSP 归 coc）
 Plug 'rust-lang/rust.vim', {'for': 'rust'}       " Rust 语法/缩进、:RustFmt/:RustRun
 Plug 'editorconfig/editorconfig-vim'             " 跟随项目 .editorconfig
 
@@ -136,8 +143,11 @@ Plug 'neoclide/coc.nvim', {'branch': 'release'}  " LSP 前端 + 补全
 
 call plug#end()
 
-" 配置改完保存即生效
-autocmd BufWritePost $MYVIMRC source $MYVIMRC
+" 配置改完保存即生效（必须放 augroup + autocmd!，否则每次重载都多叠一条）
+augroup vimrc_reload
+  autocmd!
+  autocmd BufWritePost $MYVIMRC nested source $MYVIMRC
+augroup END
 
 
 " ============================== 6. 基础快捷键 ==============================
@@ -145,7 +155,7 @@ autocmd BufWritePost $MYVIMRC source $MYVIMRC
 nnoremap <leader>w  :w!<CR>
 nnoremap <leader>x  :x<CR>
 nnoremap <leader>q  :q<CR>
-nnoremap <leader>cd :cd ..<CR>:pwd<CR>
+nnoremap <leader>cd :cd %:p:h<CR>:pwd<CR>
 
 " 窗口之间移动
 nnoremap <C-h> <C-W>h
@@ -153,18 +163,26 @@ nnoremap <C-j> <C-W>j
 nnoremap <C-k> <C-W>k
 nnoremap <C-l> <C-W>l
 
-" 与 macOS 一致的复制粘贴
-vnoremap <C-c> "+y
-nnoremap <C-v> "*p
+" 剪贴板（不占用 <C-v> 可视块 / <C-c> 可视模式取消）
+vnoremap <leader>y "+y
+nnoremap <leader>p "+p
+nnoremap <leader>P "+P
 
 " 取消搜索高亮
 noremap <silent> <leader>/ :nohlsearch<CR>
 
+" 每次滚动 1 行（'scroll' 是窗口局部选项，改窗口大小就被重置成半屏，只能用映射）
+nnoremap <C-d> <C-e>
+nnoremap <C-u> <C-y>
+
 " 标签页
 nnoremap <leader>1 :tabfirst<CR>
-nnoremap <leader>2 :tabnext 1<CR>
-nnoremap <leader>3 :tabnext 2<CR>
+nnoremap <leader>2 :tabnext 2<CR>
+nnoremap <leader>3 :tabnext 3<CR>
 nnoremap <leader>0 :tablast<CR>
+
+" leader 是 ;，原生的「重复 f/t 查找」被占掉了，用 ;; 补回来
+nnoremap <leader><leader> ;
 
 " 对齐（tabular）
 nnoremap <leader>= :Tabularize /=<CR>
@@ -180,15 +198,15 @@ nnoremap <leader>" :Tabularize /"<CR>
 " 补全菜单
 inoremap <silent><expr> <TAB>
       \ coc#pum#visible() ? coc#pum#next(1) :
-      \ CheckBackspace() ? "\<Tab>" :
+      \ <SID>CheckBackspace() ? "\<Tab>" :
       \ coc#refresh()
 inoremap <expr> <S-TAB> coc#pum#visible() ? coc#pum#prev(1) : "\<C-h>"
 inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm()
       \ : "\<C-g>u\<CR>\<c-r>=coc#on_enter()\<CR>"
 
-function! CheckBackspace() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1] =~# '\s'
+function! s:CheckBackspace() abort
+  let l:col = col('.') - 1
+  return !l:col || getline('.')[l:col - 1] =~# '\s'
 endfunction
 
 " 跳转与文档
@@ -197,8 +215,8 @@ nmap <silent> gy <Plug>(coc-type-definition)
 nmap <silent> gi <Plug>(coc-implementation)
 nmap <silent> gr <Plug>(coc-references)
 
-nnoremap <silent> K :call ShowDocumentation()<CR>
-function! ShowDocumentation()
+nnoremap <silent> K :call <SID>ShowDocumentation()<CR>
+function! s:ShowDocumentation() abort
   if CocAction('hasProvider', 'hover')
     call CocActionAsync('doHover')
   else
@@ -245,9 +263,9 @@ function! s:FormatBuffer() abort
   if l:ft ==# 'rust'
     let l:cmd = 'rustfmt --edition 2021'
   elseif l:ft ==# 'go'
-    let l:cmd = 'gofmt'
+    let l:cmd = 'goimports'   " 比 gofmt 多一步：顺手增删 import
   elseif l:ft ==# 'python'
-    let l:cmd = 'ruff format -'
+    let l:cmd = 'ruff format --stdin-filename ' . shellescape(expand('%:p')) . ' -'
   elseif l:ft =~# '^\%(sh\|bash\|zsh\)$'
     let l:cmd = 'shfmt -i 2 -ci'
   elseif l:ft ==# 'json'
@@ -307,24 +325,16 @@ function! s:RustQuickfix() abort
 endfunction
 
 " 从当前文件向上找项目根（Cargo.toml / go.mod），找不到就退回文件所在目录
+" findfile() 的 ';' 后缀就是「向上递归查找」，不用自己写循环
 function! s:FindUp(marker) abort
-  let l:dir = expand('%:p:h')
-  while 1
-    if filereadable(l:dir . '/' . a:marker)
-      return l:dir
-    endif
-    let l:parent = fnamemodify(l:dir, ':h')
-    if l:parent ==# l:dir
-      return expand('%:p:h')
-    endif
-    let l:dir = l:parent
-  endwhile
+  let l:found = findfile(a:marker, expand('%:p:h') . ';')
+  return empty(l:found) ? expand('%:p:h') : fnamemodify(l:found, ':p:h')
 endfunction
 
 " quickfix 列表的显示格式：
 "   有位置的条目 -> 文件|行 col 列| 文本（默认样式）
 "   纯输出行（;r 的程序 stdout）-> 只显示文本，不出现 "|| "
-function! QuickfixText(info) abort
+function! s:QuickfixText(info) abort
   let l:lines = []
   let l:items = getqflist({'id': a:info.id, 'items': 1}).items
   for l:i in range(a:info.start_idx - 1, a:info.end_idx - 1)
@@ -339,7 +349,7 @@ function! QuickfixText(info) abort
   endfor
   return l:lines
 endfunction
-let &quickfixtextfunc = 'QuickfixText'
+let &quickfixtextfunc = function('s:QuickfixText')
 
 " 执行完把结果摆出来：有输出/错误就打开 quickfix 窗口，不用再去按 ;e
 function! s:ShowResult(run) abort
@@ -494,14 +504,26 @@ augroup LangIndent
 augroup END
 
 " 两键、小写、无 Shift：即使超时，落到的普通命令（b/e/f/g/m/r/T）也都无害
-nnoremap <leader>b :w<CR>:call <SID>LangWorkflow('build')<CR>   " 构建 / 语法检查
-nnoremap <leader>r :w<CR>:call <SID>LangWorkflow('run')<CR>     " 运行
-nnoremap <leader>T :w<CR>:call <SID>LangWorkflow('test')<CR>    " 测试
-nnoremap <leader>g :w<CR>:call <SID>LangTerm()<CR>              " 终端里跑（需要 stdin）
-nnoremap <leader>f :call <SID>FormatBuffer()<CR>                " 格式化
-nnoremap <leader>F :call <SID>PyAutoImport()<CR>                " Python: 补 import（Fix imports）
-nnoremap <leader>e :call <SID>QuickfixToggle()<CR>               " 错误列表（开/关）
-nnoremap <leader>; :call <SID>FormatBuffer()<CR>                " 格式化（;; 快捷）
+"
+" 注意：:map 不支持行尾注释（:help map-comments），" 之后的内容会被算进 {rhs}
+" 当按键执行。所有说明一律写在映射的上一行。
+
+" 用 silent write：否则 "written" 加上工作流自己的消息会超出 cmdheight=1，
+" 每次都弹 hit-enter 提示，要多按一次回车
+" 构建 / 语法检查
+nnoremap <leader>b :silent write<CR>:call <SID>LangWorkflow('build')<CR>
+" 运行
+nnoremap <leader>r :silent write<CR>:call <SID>LangWorkflow('run')<CR>
+" 测试
+nnoremap <leader>T :silent write<CR>:call <SID>LangWorkflow('test')<CR>
+" 终端里跑（需要 stdin）
+nnoremap <leader>g :silent write<CR>:call <SID>LangTerm()<CR>
+" 格式化
+nnoremap <leader>f :call <SID>FormatBuffer()<CR>
+" Python: 补 import（Fix imports）
+nnoremap <leader>F :call <SID>PyAutoImport()<CR>
+" 错误列表（开/关）
+nnoremap <leader>e :call <SID>QuickfixToggle()<CR>
 
 
 " ============================== 9. 其它插件配置 ==============================
@@ -521,7 +543,12 @@ let g:nnn#action = {
 let g:nnn#session = 'local'
 
 " fzf：rg 驱动，排除版本控制目录与依赖目录
-set rtp+=/opt/homebrew/opt/fzf
+for s:fzf_dir in ['/opt/homebrew/opt/fzf', '/usr/local/opt/fzf', '~/.fzf']
+  if isdirectory(expand(s:fzf_dir))
+    execute 'set rtp+=' . fnameescape(expand(s:fzf_dir))
+    break
+  endif
+endfor
 let $FZF_DEFAULT_COMMAND = 'rg --files --hidden --glob "!{.git,.idea,node_modules,target,.venv,__pycache__,*~}"'
 let g:fzf_layout = { 'window': { 'width': 0.9, 'height': 0.6, 'relative': v:true, 'yoffset': 1.0 }}
 nnoremap <silent> <C-p> :Files<CR>
