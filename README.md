@@ -11,7 +11,9 @@
 |---|---|
 | `~/.vim/vimrc` | 主配置（本文件描述的键位都在这里） |
 | `~/.vim/coc-settings.json` | LSP 参数（rust-analyzer / pyright / gopls / bashls） |
-| `~/.vim/bundle/` | vim-plug 安装的插件 |
+| `~/.vim/bundle/` | vim-plug 安装的插件（不进仓库） |
+| `~/.vim/plugins.lock.vim` | 插件版本锁定（`PlugSnapshot` 生成），移植时据此还原 |
+| `~/.vim/bootstrap.sh` | 新机器一键检查依赖 + 按锁定版本装插件（macOS / Linux 通用） |
 | `~/.vim/README.md` | 本说明 |
 | `~/.vim/vimrc.bak.*` | 历史备份，回滚用 |
 
@@ -244,24 +246,63 @@ bacon-here() {
 
 ---
 
-## 7. 维护
+## 7. 移植到新机器
+
+```sh
+git clone <这个仓库> ~/.vim
+~/.vim/bootstrap.sh
+```
+
+脚本会自动探测包管理器（brew / apt / dnf / pacman / zypper / apk），
+按当前平台给出每个缺失工具的安装命令——同一个工具在各发行版里包名不同，
+脚本内部有对照表（如 `node` 在 apt 下是 `nodejs`，`shellcheck` 在 dnf/zypper 下是 `ShellCheck`）。
+非 root 且有 `sudo` 时自动加 `sudo` 前缀，容器里已是 root 则不加。
+
+**脚本只提示命令，不自动执行安装**——装系统包要不要 sudo、用哪个源，由你决定。
+依赖检查通过后它会按 `plugins.lock.vim` 安装插件。
+
+`--check` 只检查不安装，缺依赖时退出码为 1（可用在 CI）。
+
+少数工具多数 Linux 发行版没有现成包，脚本会单独提示：
+
+| 工具 | Linux 装法 |
+|---|---|
+| `shfmt` | `go install mvdan.cc/sh/v3/cmd/shfmt@latest` |
+| `prettier` | `npm install -g prettier` |
+| `ruff` | `pipx install ruff` |
+| `autoimport` | `pipx install autoimport` |
+| `rust-analyzer` / `rustfmt` | `rustup component add …` |
+| `goimports` | `go install golang.org/x/tools/cmd/goimports@latest` |
+
+coc 扩展不用手动装：`vimrc` 里的 `g:coc_global_extensions` 声明了
+`coc-go` / `coc-pyright` / `coc-rust-analyzer` / `coc-sh`，首次启动 coc 会自动安装。
+
+**注意**：`bundle/` 和 `undo/` 在 `.gitignore` 里，不进仓库——
+插件靠 `plugins.lock.vim` 还原，undo 目录由 vimrc 启动时自动创建。
+
+### 维护
 
 ```sh
 # 插件
 vim +PlugInstall +qa          # 安装 vimrc 里新增的 Plug
-vim +PlugClean! +qa           # 删除 bundle 下不再引用的目录（! 不逐个询问）
+vim +PlugUpdate  +qa          # 更新到最新（之后记得重新生成锁定文件）
+vim +PlugClean!  +qa          # 删除 bundle 下不再引用的目录（! 不逐个询问）
+
+# 锁定当前所有插件版本（升级插件后、或移植前执行）
+vim -c 'PlugSnapshot! ~/.vim/plugins.lock.vim' -c qa
+
+# 回到锁定的版本
+vim -S ~/.vim/plugins.lock.vim +qa
 
 # coc 扩展
-vim -c 'CocInstall coc-xxx' -c 'qa'
+vim -c 'CocInstall coc-xxx' -c 'qa'   # 装新的（记得同步加进 g:coc_global_extensions）
+vim -c 'CocUpdate' -c 'qa'            # 更新已装的
 
 # 依赖自检
-for b in rg nnn gopls pyright bash-language-server shellcheck shfmt ruff \
-         rustfmt gofmt goimports cargo-watch bacon jq prettier; do
-  printf '%-24s %s\n' "$b" "$(command -v $b || echo MISSING)"
-done
+~/.vim/bootstrap.sh --check
 ```
 
-回滚：`cp ~/.vim/vimrc.bak.<时间戳> ~/.vim/vimrc`
+回滚 vimrc：`cp ~/.vim/vimrc.bak.<时间戳> ~/.vim/vimrc`
 
 ---
 

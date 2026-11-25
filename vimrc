@@ -139,6 +139,13 @@ Plug 'editorconfig/editorconfig-vim'             " 跟随项目 .editorconfig
 " 导航与 LSP
 Plug 'mcchrish/nnn.vim'                          " 文件浏览器（;n）
 Plug 'junegunn/fzf.vim'                          " 模糊查找（<C-p>）
+" coc 扩展声明在这里，新机器首次启动 coc 会自动装上，不用手动 :CocInstall
+let g:coc_global_extensions = [
+      \ 'coc-go',
+      \ 'coc-pyright',
+      \ 'coc-rust-analyzer',
+      \ 'coc-sh',
+      \ ]
 Plug 'neoclide/coc.nvim', {'branch': 'release'}  " LSP 前端 + 补全
 
 call plug#end()
