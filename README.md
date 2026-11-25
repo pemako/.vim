@@ -66,7 +66,7 @@ vim-go 只保留命令集和保存时格式化。
 | `gr` | 列出引用 |
 | `K` | 悬停文档（签名 + doc） |
 | `;m` | 重命名符号（跨文件） |
-| `;a` | 当前光标位置的代码动作（Rust：`Import \`std::fmt\``、`Qualify as …`、实现 trait 等）；Visual 模式下对选中范围生效 |
+| `;a` | 当前光标位置的代码动作（Rust：`Import \`std::fmt\``、`Qualify as …`、实现 trait 等）；Visual 模式下对选中范围生效。**光标不在报错符号上时会自动跳到本行第一条诊断的位置再取**，所以在行首按也能拿到 Import |
 | `<space>a` | 全部诊断（错误/警告） |
 | `<space>o` | 当前文件符号（也可用 `;v` 侧栏大纲） |
 | `<space>s` | 全项目符号搜索 |
@@ -273,6 +273,11 @@ done
   `go_def_mapping_enabled = 0` 和 `go_doc_keywordprg_enabled = 0` 关掉。
 - Python 的 quickfix 由 `s:PythonQuickfix()` 重建（Vim 的 `errorformat` 对 `File "...", line N` 匹配不稳定）。
 - `:Format` 命令与 `;f` 等价，都走原生 formatter。
+- `;a` 不是裸的 `<Plug>(coc-codeaction-cursor)`：LSP 只在光标精确落在报错符号的列范围内
+  才返回 `Import`（实测 `impl fmt::Display for P` 这行，只有 col 6–18 有，行首 `impl`
+  和行尾 `for P` 都是 0 个）。所以 `;a` 先原地取，没有 `quickfix` 类动作时自动跳到本行
+  诊断的起始列再取。判定按动作的 `kind` 而不是个数——gopls 在任何位置都会返回一个
+  `Browse gopls feature documentation`，只数个数的话 Go 永远不会触发这个兜底。
 - 工作流用两键小写（`;b ;r ;T ;e ;f ;g`），重命名在 `;m`。早期用 `;R*` 三键方案，因为超时后 `R` 会触发替换模式，已废弃。
 - 映射后面**不能写行尾注释**（`:help map-comments`）：`"` 之后的内容会被算进 `{rhs}` 当按键执行。
   本配置所有说明都写在映射的上一行。

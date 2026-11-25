@@ -247,7 +247,37 @@ call s:DimInlayHints()
 " 重命名 / 代码动作
 nmap <leader>m  <Plug>(coc-rename)
 " 光标位置上的代码动作（Import `std::fmt` 这类修复在这里）
-nmap <leader>a  <Plug>(coc-codeaction-cursor)
+" rust-analyzer 只在光标精确落在报错符号上时才给 Import（实测 impl fmt::Display
+" 这行，只有 fmt::Display 那段列范围内有 Import，行首 impl 和行尾 for P 都是 0 个），
+" 所以先原地取；取不到就跳到本行第一条诊断的起始列再取，省得自己去数列。
+" 判定用的是"有没有 quickfix 类动作"而不是"有没有动作"：gopls 在任何位置都会
+" 返回一个 Browse documentation，只数个数的话 fallback 永远不触发。
+function! s:HasFix(acts) abort
+  if type(a:acts) != v:t_list
+    return 0
+  endif
+  for l:a in a:acts
+    if get(l:a, 'kind', '') =~# '^\%(quickfix\|source\.\|refactor\.\)'
+      return 1
+    endif
+  endfor
+  return 0
+endfunction
+
+function! s:CodeAction() abort
+  if s:HasFix(CocAction('codeActions', 'cursor'))
+    call CocActionAsync('codeAction', 'cursor')
+    return
+  endif
+  " 光标处没有可用修复，跳到本行第一条诊断的起始列再试
+  let l:diags = filter(CocAction('diagnosticList'),
+        \ 'v:val.file ==# expand("%:p") && v:val.lnum == line(".")')
+  if !empty(l:diags) && l:diags[0].col != col('.')
+    call cursor(l:diags[0].lnum, l:diags[0].col)
+  endif
+  call CocActionAsync('codeAction', 'cursor')
+endfunction
+nnoremap <silent> <leader>a :call <SID>CodeAction()<CR>
 " 选区范围上的代码动作
 xmap <leader>a  <Plug>(coc-codeaction-selected)
 
