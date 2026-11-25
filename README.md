@@ -66,7 +66,7 @@ vim-go 只保留命令集和保存时格式化。
 | `gr` | 列出引用 |
 | `K` | 悬停文档（签名 + doc） |
 | `;m` | 重命名符号（跨文件） |
-| `;a` | 代码动作（自动 `use`/import、实现 trait、生成 match 分支…）；Visual 模式同样可用 |
+| `;a` | 当前光标位置的代码动作（Rust：`Import \`std::fmt\``、`Qualify as …`、实现 trait 等）；Visual 模式下对选中范围生效 |
 | `<space>a` | 全部诊断（错误/警告） |
 | `<space>o` | 当前文件符号（也可用 `;v` 侧栏大纲） |
 | `<space>s` | 全项目符号搜索 |

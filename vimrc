@@ -246,7 +246,9 @@ call s:DimInlayHints()
 
 " 重命名 / 代码动作
 nmap <leader>m  <Plug>(coc-rename)
-nmap <leader>a  <Plug>(coc-codeaction-selected)
+" 光标位置上的代码动作（Import `std::fmt` 这类修复在这里）
+nmap <leader>a  <Plug>(coc-codeaction-cursor)
+" 选区范围上的代码动作
 xmap <leader>a  <Plug>(coc-codeaction-selected)
 
 " coc 列表
