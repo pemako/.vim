@@ -420,7 +420,7 @@ function! s:LangWorkflow(action) abort
     if a:action ==# 'run'
       let &l:errorformat = '%m'          " 运行时保留程序输出，而不是当错误丢弃
     endif
-    execute 'make ' . a:action
+    silent execute 'make ' . a:action
     if a:action ==# 'test'
       call s:RustQuickfix()
     endif
@@ -431,31 +431,31 @@ function! s:LangWorkflow(action) abort
     if a:action ==# 'run'
       let &l:errorformat = '%m'
     endif
-    execute 'make ' . (a:action ==# 'build' ? 'build ./...'
+    silent execute 'make ' . (a:action ==# 'build' ? 'build ./...'
           \ : a:action ==# 'test' ? 'test ./...' : 'run .')
     call s:ShowResult(a:action ==# 'run')
   elseif l:ft ==# 'python'
     let &l:makeprg = 'python3'
     if a:action ==# 'build'
-      execute 'make -m py_compile ' . l:file
+      silent execute 'make -m py_compile ' . l:file
     elseif a:action ==# 'test'
-      execute 'make ' . (executable('pytest') ? '-m pytest -q' : '-m unittest -v')
+      silent execute 'make ' . (executable('pytest') ? '-m pytest -q' : '-m unittest -v')
     else
-      execute 'make ' . l:file
+      silent execute 'make ' . l:file
     endif
     call s:PythonQuickfix()
     call s:ShowResult(a:action ==# 'run')
   elseif l:ft =~# '^\%(sh\|bash\|zsh\)$'
     if a:action ==# 'build'
       compiler shellcheck
-      execute 'make ' . l:file
+      silent execute 'make ' . l:file
       call s:ShowResult(0)
     elseif a:action ==# 'test'
       echo 'Shell 没有测试阶段，用 ;b 做 shellcheck 检查'
     else
       let &l:makeprg = 'bash'
       let &l:errorformat = '%m'          " 脚本输出进 quickfix，方便回看
-      execute 'make ' . l:file
+      silent execute 'make ' . l:file
       call s:ShowResult(1)
     endif
   else
