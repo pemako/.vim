@@ -130,14 +130,9 @@ Plug 'dhruvasagar/vim-table-mode'                " 表格（;tm / ;tt）
 Plug 'yianwillis/vimcdoc'                        " Vim 中文帮助
 
 " 语言
-" vim-go 的 ftplugin 会用 buffer-local 映射抢走 gd/K/<C-]>，压过 coc 的全局映射，
-" 必须在加载前关掉，否则 Go 文件里跳转/悬停走的是 :GoDef 而不是 coc
-let g:go_def_mapping_enabled     = 0
-let g:go_doc_keywordprg_enabled  = 0
-let g:go_code_completion_enabled = 0
-" vim-go 默认会自己起一套 gopls（含 daemon），和 coc-go 的那个重复
-let g:go_gopls_enabled           = 0
-Plug 'fatih/vim-go', {'tag': '*', 'for': 'go'}   " Go 命令集（LSP 归 coc）
+" 不装 vim-go：Vim 9.2 自带 go 的 syntax/indent/ftplugin/compiler（功能等价，
+" 缩进函数同为 GoIndent()），其余能力 coc-go 已覆盖（go.tags.add / go.impl.cursor /
+" go.test.generate.* / go.playground 等）。保存时的格式化见下面 GoFormatOnSave。
 Plug 'rust-lang/rust.vim', {'for': 'rust'}       " Rust 语法/缩进、:RustFmt/:RustRun
 Plug 'editorconfig/editorconfig-vim'             " 跟随项目 .editorconfig
 
@@ -572,26 +567,13 @@ endfunction
 command! -nargs=0 Import :call <SID>PyAutoImport()
 
 " 各语言缩进惯例（覆盖全局 2 空格）
-" vim-go 保存时也会整理 import，同样要按三组分。因为我们关掉了 gopls
-" （go_gopls_enabled = 0），vim-go 的 go_fmt_command 会降级成 gofmt——
-" gofmt 不动 import，分组只由 goimports 那条路径（go_imports_mode）决定。
-" 用 BufWritePre 在 vim-go 的 autosave 之前把 -local 填好。
-let g:go_fmt_command = 'goimports'
-augroup GoLocalImports
+" Go 保存时自动格式化（原来由 vim-go 的 autosave 做，移除后自己挂一条）。
+" 走和 ;f 同一个 s:FormatBuffer，所以分组规则一致（goimports -local <module>），
+" 不会出现 gopls 和 goimports 两套规则打架。
+augroup GoFormatOnSave
   autocmd!
-  autocmd BufWritePre *.go call s:SetGoFmtLocal()
+  autocmd BufWritePre *.go call s:FormatBuffer()
 augroup END
-function! s:SetGoFmtLocal() abort
-  let l:mod = s:GoModule()
-  if empty(l:mod)
-    return
-  endif
-  let g:go_gopls_local = l:mod
-  let l:opts = get(g:, 'go_fmt_options', {})
-  let g:go_fmt_options = extend(
-        \ type(l:opts) == v:t_dict ? copy(l:opts) : {},
-        \ {'goimports': '-local ' . l:mod})
-endfunction
 
 augroup LangIndent
   autocmd!

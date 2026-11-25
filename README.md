@@ -29,9 +29,8 @@
 | 文件搜索 | fzf + ripgrep | `<C-p>` |
 | 文件浏览 | nnn | `;n` |
 
-ALE 已移除。vim-go 的 LSP 功能全部关掉（`go_gopls_enabled` / `go_def_mapping_enabled` /
-`go_doc_keywordprg_enabled` / `go_code_completion_enabled` 均为 0），Go 的 gopls 只由 coc-go 起一个实例；
-vim-go 只保留命令集和保存时格式化。
+ALE 和 vim-go 均已移除。Go 的语法 / 缩进 / `compiler` 用 Vim 9.2 内置的 runtime 文件
+（和 vim-go 的功能等价，缩进函数同为 `GoIndent()`），LSP 由 coc-go 提供，gopls 只有一个实例。
 
 ---
 
@@ -124,7 +123,7 @@ Python 专用：
 | filetype | 命令 | 备注 |
 |---|---|---|
 | rust | `rustfmt --edition 2021` | 若项目用 2024 edition，改 `s:FormatBuffer()` 里这一行 |
-| go | `goimports -local <module>` | 在 `gofmt` 基础上顺手增删 import，并把 import 分成三组：标准库 / 第三方 / 本地包。`<module>` 从最近的 `go.mod` 第一行读，无 `go.mod` 时退回普通 `goimports`。保存时 vim-go 也会再做一次，同样带 `-local` |
+| go | `goimports -local <module>` | 在 `gofmt` 基础上顺手增删 import，并把 import 分成三组：标准库 / 第三方 / 本地包。`<module>` 从最近的 `go.mod` 第一行读，无 `go.mod` 时退回普通 `goimports`。保存时自动跑同一个 `s:FormatBuffer`，所以 `;f` 和 `:w` 的分组结果一致 |
 | python | `ruff format --stdin-filename <当前文件> -` | 只格式化，不跑 lint 修复；带文件名才能读到项目 `pyproject.toml` 的配置 |
 | sh / bash / zsh | `shfmt -i 2 -ci` | 2 空格缩进，`case` 分支也缩进 |
 | json | `jq .` | 2 空格 |
@@ -170,7 +169,7 @@ vim main.go
 1. `gd` / `K` / `gr`（gopls）
 2. `;b` 编译检查 → `;e`
 3. `;r` 运行（`go run .`，需要当前目录是 module）
-4. `;T` 测试；格式化 vim-go 保存时已处理，也可 `;f`
+4. `;T` 测试；保存时自动格式化（`BufWritePre` → `s:FormatBuffer`），也可随时 `;f`
 
 ### Python
 
@@ -268,9 +267,16 @@ done
 
 ## 8. 已知取舍与默认值
 
-- vim-go 只留 `:GoBuild` / `:GoTest` / `:GoFmt` 这类命令，LSP 全部交给 coc-go；`:GoDef` 会退化成 godef（未安装），请用 `gd`。
-  vim-go 的 ftplugin 默认用 buffer-local 映射抢 `gd` / `K` / `<C-]>`（会压过 coc 的全局映射），已用
-  `go_def_mapping_enabled = 0` 和 `go_doc_keywordprg_enabled = 0` 关掉。
+- **不装 vim-go**。它的三块能力都已有替代，留着反而是 bug 来源（曾用 buffer-local 映射抢走
+  `gd` / `K` / `<C-]>`、另起一套 gopls 导致 6 个进程、`go_fmt_command` 静默降级成 `gofmt`
+  使 import 分组失效）：
+  - 语法 / 缩进 / `compiler` → Vim 9.2 内置（实测禁用 vim-go 后 `;b` / `;r` / `;f` 和高亮缩进全部正常）
+  - 跳转 / 悬停 / 补全 / 重命名 → coc-go
+  - `:GoAddTags` / `:GoImpl` / `:GoTestFunc` / `:GoPlay` → coc-go 的 `go.tags.add` /
+    `go.impl.cursor` / `go.test.generate.*` / `go.playground`（`:CocCommand` 调用）
+  - 保存时格式化 → 自己的 `GoFormatOnSave` autocmd
+  另外 vim-go 的 15 个外部依赖本机只装了 4 个，`:GoAddTags` 这类命令实测本来就跑不动
+  （缺 `gomodifytags`）。需要调试器时 `dlv` 已装，可直接用 `:CocCommand go.` 系列或命令行。
 - Python 的 quickfix 由 `s:PythonQuickfix()` 重建（Vim 的 `errorformat` 对 `File "...", line N` 匹配不稳定）。
 - `:Format` 命令与 `;f` 等价，都走原生 formatter。
 - `;F` 为什么要串两个工具：`autoimport` 能**补**缺失的 import 但不排序（实测输出里
