@@ -104,7 +104,7 @@ Python 专用：
 
 | 键 | 作用 |
 |---|---|
-| `;F` / `:Import` | 用 `autoimport` 扫描当前文件，补齐缺失的 import（`import os`、`from pathlib import Path` 这类），补完自动重载缓冲区并按插入行数修正光标（停在原来那行代码上，而不是原来那个行号）。用大写 `F` 是为了误触时安全（`F` 只会等下一个字符，不会进模式） |
+| `;F` / `:Import` | 一键整理当前文件的 import，三件事：**补**缺失的（`autoimport`）、**删**没用到的、**分组排序**（`ruff check --select I,F401 --fix`，标准库 / 第三方两组）。补完自动重载缓冲区并按增删行数修正光标（停在原来那行代码上，而不是原来那个行号）。没装 `ruff` 时降级成只做增删，不报错。用大写 `F` 是为了误触时安全（`F` 只会等下一个字符，不会进模式） |
 | 补全时选 "Auto-import" 条目 | 单个符号自动带 import（pyright `autoImportCompletions`，coc-pyright 默认开） |
 | `:CocCommand pyright.organizeimports` | 反方向：排序并删除未使用的 import |
 
@@ -273,6 +273,11 @@ done
   `go_def_mapping_enabled = 0` 和 `go_doc_keywordprg_enabled = 0` 关掉。
 - Python 的 quickfix 由 `s:PythonQuickfix()` 重建（Vim 的 `errorformat` 对 `File "...", line N` 匹配不稳定）。
 - `:Format` 命令与 `;f` 等价，都走原生 formatter。
+- `;F` 为什么要串两个工具：`autoimport` 能**补**缺失的 import 但不排序（实测输出里
+  `from` 会排在 `import` 前面）；`ruff --select I` 能分组排序、`F401` 能删未使用，但
+  **不能补**缺失的。两者职责不重叠，所以先 `autoimport` 再 `ruff`。
+  已知局限：`autoimport` 补不了 `collections` 的部分成员（如 `defaultdict`），
+  这类用补全列表里的 Auto-import 条目，或手写。
 - Python 的补 import 用 `;F`（`autoimport`）而不是 `;a`：pyright 对
   "X is not defined" 这类诊断**不提供任何 code action**（实测在诊断位置取到 0 个），
   它的 auto-import 只在补全列表里出现。Rust（rust-analyzer）和 Go（gopls）则在

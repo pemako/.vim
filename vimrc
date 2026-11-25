@@ -549,17 +549,25 @@ function! s:PyAutoImport() abort
   " 让光标停在原行号上（指向的已经是别的代码），所以按插入行数补偿
   let l:before = line('$')
   let l:view   = winsaveview()
-  let l:out = system(shellescape(l:bin) . ' ' . shellescape(expand('%:p')) . ' 2>&1')
+  let l:file = shellescape(expand('%:p'))
+  let l:out = system(shellescape(l:bin) . ' ' . l:file . ' 2>&1')
   if v:shell_error != 0
     echo 'autoimport 失败：' . substitute(l:out, "\n", ' ', 'g')
     return
+  endif
+  " autoimport 只管增删，不排序（实测输出里 from 可能排在 import 前面）。
+  " 用 ruff 的 isort 规则补上分组：I = 排序分组，F401 = 删未使用的 import。
+  " 两者职责不重叠：autoimport 能"补"缺失的，ruff 不能；ruff 能分组，autoimport 不能。
+  if executable('ruff')
+    call system('ruff check --select I,F401 --fix --quiet ' . l:file . ' 2>&1')
   endif
   silent! edit!
   let l:added = line('$') - l:before
   let l:view.lnum    += l:added
   let l:view.topline += l:added
   call winrestview(l:view)
-  echo l:added > 0 ? printf('已补齐 %d 行 import', l:added) : '没有缺失的 import'
+  echo l:added > 0 ? printf('import 已整理（净增 %d 行）', l:added)
+        \ : (l:added < 0 ? printf('import 已整理（净减 %d 行）', -l:added) : 'import 已是最新')
 endfunction
 command! -nargs=0 Import :call <SID>PyAutoImport()
 
