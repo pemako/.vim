@@ -124,7 +124,7 @@ Python 专用：
 | filetype | 命令 | 备注 |
 |---|---|---|
 | rust | `rustfmt --edition 2021` | 若项目用 2024 edition，改 `s:FormatBuffer()` 里这一行 |
-| go | `goimports` | 在 `gofmt` 基础上顺手增删 import；保存时 vim-go 也会再做一次（`go_fmt_autosave` / `go_imports_autosave`） |
+| go | `goimports -local <module>` | 在 `gofmt` 基础上顺手增删 import，并把 import 分成三组：标准库 / 第三方 / 本地包。`<module>` 从最近的 `go.mod` 第一行读，无 `go.mod` 时退回普通 `goimports`。保存时 vim-go 也会再做一次，同样带 `-local` |
 | python | `ruff format --stdin-filename <当前文件> -` | 只格式化，不跑 lint 修复；带文件名才能读到项目 `pyproject.toml` 的配置 |
 | sh / bash / zsh | `shfmt -i 2 -ci` | 2 空格缩进，`case` 分支也缩进 |
 | json | `jq .` | 2 空格 |
@@ -273,6 +273,10 @@ done
   `go_def_mapping_enabled = 0` 和 `go_doc_keywordprg_enabled = 0` 关掉。
 - Python 的 quickfix 由 `s:PythonQuickfix()` 重建（Vim 的 `errorformat` 对 `File "...", line N` 匹配不稳定）。
 - `:Format` 命令与 `;f` 等价，都走原生 formatter。
+- Python 的补 import 用 `;F`（`autoimport`）而不是 `;a`：pyright 对
+  "X is not defined" 这类诊断**不提供任何 code action**（实测在诊断位置取到 0 个），
+  它的 auto-import 只在补全列表里出现。Rust（rust-analyzer）和 Go（gopls）则在
+  code action 里给 `Import …` / `Add import`，所以这两门语言用 `;a` 即可。
 - `;a` 不是裸的 `<Plug>(coc-codeaction-cursor)`：LSP 只在光标精确落在报错符号的列范围内
   才返回 `Import`（实测 `impl fmt::Display for P` 这行，只有 col 6–18 有，行首 `impl`
   和行尾 `for P` 都是 0 个）。所以 `;a` 先原地取，没有 `quickfix` 类动作时自动跳到本行

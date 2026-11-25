@@ -293,6 +293,15 @@ nnoremap <silent><nowait> <space>p :<C-u>CocListResume<CR>
 
 
 " ============================== 8. 语言工作流 ==============================
+" 从当前文件向上找 go.mod，读出 module 名（goimports -local 的分组依据）
+function! s:GoModule() abort
+  let l:gomod = findfile('go.mod', expand('%:p:h') . ';')
+  if empty(l:gomod)
+    return ''
+  endif
+  return matchstr(get(readfile(l:gomod, '', 5), 0, ''), '^module\s\+\zs\S\+')
+endfunction
+
 " 格式化：直接用各语言自己的 formatter，失败不动缓冲区
 function! s:FormatBuffer() abort
   let l:ft   = &filetype
@@ -302,7 +311,13 @@ function! s:FormatBuffer() abort
   if l:ft ==# 'rust'
     let l:cmd = 'rustfmt --edition 2021'
   elseif l:ft ==# 'go'
-    let l:cmd = 'goimports'   " 比 gofmt 多一步：顺手增删 import
+    " goimports 默认只分两组（标准库和本地包混在一起，第三方单独一组）。
+    " 传 -local <module> 才会拆成三组：标准库 / 第三方 / 本地包。
+    let l:cmd = 'goimports'
+    let l:mod = s:GoModule()
+    if !empty(l:mod)
+      let l:cmd .= ' -local ' . shellescape(l:mod)
+    endif
   elseif l:ft ==# 'python'
     let l:cmd = 'ruff format --stdin-filename ' . shellescape(expand('%:p')) . ' -'
   elseif l:ft =~# '^\%(sh\|bash\|zsh\)$'
@@ -549,6 +564,27 @@ endfunction
 command! -nargs=0 Import :call <SID>PyAutoImport()
 
 " 各语言缩进惯例（覆盖全局 2 空格）
+" vim-go 保存时也会整理 import，同样要按三组分。因为我们关掉了 gopls
+" （go_gopls_enabled = 0），vim-go 的 go_fmt_command 会降级成 gofmt——
+" gofmt 不动 import，分组只由 goimports 那条路径（go_imports_mode）决定。
+" 用 BufWritePre 在 vim-go 的 autosave 之前把 -local 填好。
+let g:go_fmt_command = 'goimports'
+augroup GoLocalImports
+  autocmd!
+  autocmd BufWritePre *.go call s:SetGoFmtLocal()
+augroup END
+function! s:SetGoFmtLocal() abort
+  let l:mod = s:GoModule()
+  if empty(l:mod)
+    return
+  endif
+  let g:go_gopls_local = l:mod
+  let l:opts = get(g:, 'go_fmt_options', {})
+  let g:go_fmt_options = extend(
+        \ type(l:opts) == v:t_dict ? copy(l:opts) : {},
+        \ {'goimports': '-local ' . l:mod})
+endfunction
+
 augroup LangIndent
   autocmd!
   autocmd FileType rust   setlocal sw=4 sts=4 ts=4 et
